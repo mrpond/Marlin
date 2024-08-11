@@ -711,12 +711,16 @@ inline void manage_inactivity(const bool no_stepper_sleep=false) {
 
   TERN_(MONITOR_DRIVER_STATUS, monitor_tmc_drivers());
 
-  // Limit check_axes_activity frequency to 10Hz
-  static millis_t next_check_axes_ms = 0;
-  if (ELAPSED(ms, next_check_axes_ms)) {
+  #if BOARD != BOARD_SOVOL_V131
+    // Limit check_axes_activity frequency to 10Hz
+    static millis_t next_check_axes_ms = 0;
+    if (ELAPSED(ms, next_check_axes_ms)) {
+      planner.check_axes_activity();
+      next_check_axes_ms = ms + 100UL;
+    }
+  #else
     planner.check_axes_activity();
-    next_check_axes_ms = ms + 100UL;
-  }
+  #endif
 
   #if PIN_EXISTS(FET_SAFETY)
     static millis_t FET_next;

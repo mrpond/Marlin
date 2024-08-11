@@ -171,3 +171,4 @@ tags
 
 # for debug compiler flag
 compile.log
+/.vscode

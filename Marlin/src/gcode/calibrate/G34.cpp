@@ -136,6 +136,45 @@ void GcodeSuite::G34() {
 
   #if _REDUCE_CURRENT
     // Reset current to original values
+    if (DEBUGGING(LEVELING)) DEBUG_ECHOLNPGM("Increase Z Return Current");
+  #endif
+
+  #ifdef GANTRY_CALIBRATION_RETURN_CURRENT
+    #if HAS_MOTOR_CURRENT_SPI
+      stepper.set_digipot_current(Z_AXIS, GANTRY_CALIBRATION_RETURN_CURRENT);
+    #elif HAS_MOTOR_CURRENT_PWM
+      stepper.set_digipot_current(1, GANTRY_CALIBRATION_RETURN_CURRENT);
+    #elif HAS_MOTOR_CURRENT_DAC
+      stepper_dac.set_current_value(Z_AXIS, GANTRY_CALIBRATION_RETURN_CURRENT);
+    #elif HAS_MOTOR_CURRENT_I2C
+      digipot_i2c.set_current(Z_AXIS, GANTRY_CALIBRATION_RETURN_CURRENT)
+    #elif HAS_TRINAMIC_CONFIG
+      #if AXIS_IS_TMC(Z)
+        stepperZ.rms_current(GANTRY_CALIBRATION_RETURN_CURRENT);
+      #endif
+      #if AXIS_IS_TMC(Z2)
+        stepperZ2.rms_current(GANTRY_CALIBRATION_RETURN_CURRENT);
+      #endif
+      #if AXIS_IS_TMC(Z3)
+        stepperZ3.rms_current(GANTRY_CALIBRATION_RETURN_CURRENT);
+      #endif
+      #if AXIS_IS_TMC(Z4)
+        stepperZ4.rms_current(GANTRY_CALIBRATION_RETURN_CURRENT);
+      #endif
+    #endif
+  #endif
+  
+  // Back off end plate, back to normal motion range
+  if (DEBUGGING(LEVELING)) DEBUG_ECHOLNPGM("Z Backoff");
+  do_blocking_move_to_z(zpounce, MMM_TO_MMS(GANTRY_CALIBRATION_FEEDRATE));
+
+  #ifdef GANTRY_CALIBRATION_COMMANDS_POST
+    if (DEBUGGING(LEVELING)) DEBUG_ECHOLNPGM("Running Post Commands");
+    process_subcommands_now(F(GANTRY_CALIBRATION_COMMANDS_POST));
+  #endif
+
+  #if _REDUCE_CURRENT
+    // Reset current to original values
     if (DEBUGGING(LEVELING)) DEBUG_ECHOLNPGM("Restore Current");
   #endif
 
@@ -160,15 +199,6 @@ void GcodeSuite::G34() {
     #if AXIS_IS_TMC(Z4)
       stepperZ4.rms_current(previous_current_arr[3]);
     #endif
-  #endif
-
-  // Back off end plate, back to normal motion range
-  if (DEBUGGING(LEVELING)) DEBUG_ECHOLNPGM("Z Backoff");
-  do_blocking_move_to_z(zpounce, MMM_TO_MMS(GANTRY_CALIBRATION_FEEDRATE));
-
-  #ifdef GANTRY_CALIBRATION_COMMANDS_POST
-    if (DEBUGGING(LEVELING)) DEBUG_ECHOLNPGM("Running Post Commands");
-    process_subcommands_now(F(GANTRY_CALIBRATION_COMMANDS_POST));
   #endif
 
   SET_SOFT_ENDSTOP_LOOSE(false);
